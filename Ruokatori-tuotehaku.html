@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- 修改点 1：标题改为 Tuotekoodien pikahaku -->
+    <title>Tuotekoodien pikahaku</title>
+    <style>
+        :root {
+            --primary: #0051a5;
+            --bg: #f4f7f6;
+            --text: #1a1a1a;
+            --code-color: #003b7a;
+            --highlight-bg: #fff3cd;
+            --highlight-text: #856404;
+            --danger: #d32f2f;
+            --success: #2e7d32;
+            --admin-blue: #e3f2fd;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            transition: background-color 0.3s;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        body.admin-mode { background-color: #eef5fc; }
+        
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            margin-bottom: 5px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .header-bar h1 {
+            font-size: 1.1rem;
+            margin: 0;
+            color: var(--primary);
+        }
+        .admin-toggle {
+            background: #fff3e0;
+            color: #e65100;
+            border: 1px solid #ffb74d;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .admin-toggle:hover { background: #ffe0b2; }
+
+        #adminBanner {
+            display: none;
+            background: #1976d2;
+            color: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        #adminBanner button {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid white;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #adminBanner button:hover { background: rgba(255,255,255,0.4); }
+
+        .search-sticky {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background-color: var(--bg);
+            padding: 5px 0 10px 0;
+            border-bottom: 1px solid #d1d9e6;
+        }
+        body.admin-mode .search-sticky { background-color: transparent; border-bottom: none; }
+        #searchInput {
+            width: 100%;
+            padding: 16px 15px;
+            font-size: 1.15rem;
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            box-sizing: border-box;
+            outline: none;
+            box-shadow: 0 2px 8px rgba(0,81,165,0.12);
+        }
+        #searchInput:focus { box-shadow: 0 0 0 4px rgba(0,81,165,0.2); }
+
+        .results-info {
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 12px 0 8px 0;
+            text-align: center;
+        }
+        .results-info.empty { color: var(--danger); }
+
+        .product-list {
+            list-style: none; padding: 0; margin: 0;
+            display: flex; flex-direction: column; gap: 6px; padding-bottom: 20px;
+            flex: 1;
+        }
+
+        .card {
+            background-color: #ffffff; border-radius: 8px; padding: 12px 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            display: flex; justify-content: space-between; align-items: center;
+            border-left: 5px solid var(--primary); cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s, background-color 0.2s;
+            border-top: none; border-right: none; border-bottom: none;
+            width: 100%; text-align: left; font-family: inherit; font-size: inherit;
+            box-sizing: border-box;
+        }
+        .card:hover { box-shadow: 0 3px 6px rgba(0,0,0,0.12); background-color: #fafcff; }
+        .card:active { transform: scale(0.98); background-color: #f0f5ff; }
+        .card:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+        .card-info { flex: 1; padding-right: 12px; min-width: 0; }
+        .product-name { font-weight: 700; font-size: 1rem; line-height: 1.3; margin-bottom: 4px; word-break: break-word; }
+        .badge { font-size: 0.7rem; background-color: #d4edda; color: #0b4e1a; padding: 2px 6px; border-radius: 4px; display: inline-block; font-weight: bold; }
+
+        .code-area { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
+        .product-code { font-family: 'Courier New', Courier, monospace; font-size: 1.5rem; font-weight: 900; color: var(--code-color); letter-spacing: 1px; line-height: 1; }
+        .copy-icon { font-size: 0.75rem; color: #999; margin-top: 4px; transition: color 0.2s; }
+        .card:hover .copy-icon { color: var(--primary); }
+
+        mark { background-color: var(--highlight-bg); color: var(--highlight-text); border-radius: 2px; padding: 0 2px; }
+        .empty-state { text-align: center; color: #888; padding: 50px 20px; font-size: 1.05rem; background: white; border-radius: 10px; }
+
+        /* 管理面板样式 */
+        #adminPanel {
+            display: none; background: #fff; border-radius: 12px; padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; border: 2px solid #1976d2;
+        }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        .admin-header h2 { margin: 0; font-size: 1.2rem; color: var(--primary); }
+        .btn-close { background: #f0f0f0; color: #333; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-close:hover { background: #ddd; }
+        .admin-guide { background: var(--admin-blue); border-left: 4px solid #1976d2; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 0.85rem; line-height: 1.5; }
+        .admin-guide ol { margin: 5px 0 0 20px; padding: 0; }
+        .admin-guide li { margin-bottom: 5px; }
+        .admin-form { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .admin-form input { padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; flex: 1; min-width: 150px; }
+        .admin-form button { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .admin-form button:hover { background: #003d7a; }
+        .admin-list { max-height: 350px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; margin-bottom: 20px; }
+        .admin-list-item { display: flex; justify-content: space-between; padding: 10px 15px; border-bottom: 1px solid #eee; align-items: center; }
+        .admin-list-item:last-child { border-bottom: none; }
+        .admin-list-item .info { font-size: 0.9rem; flex: 1; }
+        .admin-list-item .info strong { display: block; font-size: 1rem; }
+        .admin-list-item .code { font-family: monospace; font-size: 1.1rem; color: var(--primary); font-weight: bold; margin-right: 15px; }
+        .btn-delete { background: #ffebee; color: var(--danger); border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-delete:hover { background: #ffcdd2; }
+        .admin-actions { display: flex; gap: 10px; flex-wrap: wrap; padding-top: 15px; border-top: 1px solid #eee; margin-top: 10px; }
+        .btn-secondary { background: #e0e0e0; color: #333; border: none; padding: 12px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; flex: 1; }
+        .btn-secondary:hover { background: #ccc; }
+        .btn-primary { background: var(--success); color: white; border: none; padding: 12px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; flex: 1; }
+        .btn-primary:hover { background: #1b5e20; }
+
+        /* 修改点 2：底部免责声明样式 */
+        .footer-disclaimer {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 20px;
+            padding: 15px 10px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        #toast { visibility: hidden; min-width: 200px; background-color: #333; color: #fff; text-align: center; border-radius: 8px; padding: 12px 20px; position: fixed; z-index: 200; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 0.95rem; opacity: 0; transition: opacity 0.3s, visibility 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        #toast.show { visibility: visible; opacity: 1; }
+
+        @media (max-width: 500px) {
+            .admin-form { flex-direction: column; }
+            .admin-form input, .admin-form button { width: 100%; }
+            .admin-actions { flex-direction: column; }
+            .btn-secondary, .btn-primary { width: 100%; }
+            .header-bar h1 { font-size: 1rem; }
+            .admin-toggle { padding: 6px 8px; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header-bar">
+    <!-- 修改点 3：大标题改名 -->
+    <h1>Tuotekoodien pikahaku</h1>
+    <button class="admin-toggle" onclick="toggleAdmin()">🔧 Hallintaan (Admin)</button>
+</div>
+
+<div id="adminBanner">
+    <span>⚙️ Olet hallintatilassa. Muutokset tallennetaan automaattisesti.</span>
+    <button onclick="closeAdminPanel()">✖️ Sulje</button>
+</div>
+
+<div id="adminPanel">
+    <div class="admin-header">
+        <h2>⚙️ Tuotteiden hallinta</h2>
+        <button class="btn-close" onclick="closeAdminPanel()">✖️ Sulje</button>
+    </div>
+    <div class="admin-guide">
+        <strong>Ohjeet päivittämiseen:</strong>
+        <ol>
+            <li>Lisää uusi tuote täyttämällä nimi ja koodi, paina "Lisää tuote".</li>
+            <li>Poista vanhentuneet tuotteet painamalla "Poista".</li>
+            <li><strong>TÄRKEÄÄ:</strong> Kun olet valmis, lataa varmuuskopio (JSON) ja jaa se muille työntekijöille.</li>
+            <li>Poistu hallintatilasta painamalla "Tallenna ja sulje" -nappia.</li>
+        </ol>
+    </div>
+    <div class="admin-form">
+        <input type="text" id="adminName" placeholder="Tuotteen nimi (esim. KANA...)">
+        <input type="text" id="adminCode" placeholder="Tuotekoodi (esim. 12345)">
+        <button onclick="addProduct()">➕ Lisää tuote</button>
+    </div>
+    <div class="admin-list" id="adminList"></div>
+    <div class="admin-actions">
+        <button class="btn-primary" onclick="closeAdminPanel()">✅ Tallenna ja sulje</button>
+    </div>
+    <div class="admin-actions" style="border-top: none; padding-top: 5px;">
+        <button class="btn-secondary" onclick="exportData()">📥 Lataa varmuuskopio (JSON)</button>
+        <button class="btn-secondary" onclick="document.getElementById('importFile').click()">📤 Palauta varmuuskopiosta</button>
+        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+        <button class="btn-secondary" style="color: var(--danger);" onclick="resetData()">🔄 Palauta oletusasetukset</button>
+    </div>
+</div>
+
+<div class="search-sticky">
+    <input type="text" id="searchInput" placeholder="Kirjoita tuotteen nimi tai koodi..." autocomplete="off" autofocus aria-label="Hae tuotteita nimellä tai koodilla">
+</div>
+
+<div class="results-info" id="resultsInfo" aria-live="polite"></div>
+<ul class="product-list" id="productList"></ul>
+<div id="toast">Koodi kopioitu!</div>
+
+<!-- 修改点 4：底部免责声明 -->
+<footer class="footer-disclaimer">
+    Epävirallinen työkalu. Ei sidoksissa Prisman virallisiin järjestelmiin.
+</footer>
+
+<script>
+    const DEFAULT_PRODUCTS = [
+        { fiName: "KIOVAN KANA", sku: "28559" },
+        { fiName: "PUUTARHURIN BROILERPIHVI", sku: "22104" },
+        { fiName: "KANAPASTA KERMAINEN", sku: "58870" },
+        { fiName: "KANA-CAESARPASTA", sku: "55178" },
+        { fiName: "CHICKEN TIKKA MASALA", sku: "61437" },
+        { fiName: "CHICKEN JALFREZI", sku: "61420" },
+        { fiName: "BUTTER CHICKEN", sku: "61413" },
+        { fiName: "APPELSIINIKANA", sku: "57321" },
+        { fiName: "LYONIN KANAA", sku: "66410" },
+        { fiName: "SWEET CHILI -KANA", sku: "52819" },
+        { fiName: "KARAMELLIBROILERI", sku: "56337" },
+        { fiName: "TERIYAKIKANA", sku: "76171" },
+        { fiName: "KANAA KUNG PAO JA RIISI", sku: "65840" },
+        { fiName: "KANAA MANGOKASTIKK", sku: "72394" },
+        { fiName: "JUUSTO-UUNIMAKKARA", sku: "75772" },
+        { fiName: "KUUMA MUSTAMAKKARA", sku: "32263" },
+        { fiName: "HIRVIPIHVIT SUPPILOV.KAST", sku: "49606" },
+        { fiName: "LINDSTRÖMINPIHVI", sku: "18034" },
+        { fiName: "PORSAAN SISÄFILE", sku: "58839" },
+        { fiName: "YLIKYPSÄÄ POSSUA", sku: "24161" },
+        { fiName: "KARAMELLIPOSSU", sku: "57097" },
+        { fiName: "PORK IN OYSTER SAUCE", sku: "61431" },
+        { fiName: "PORSAAN FILEEVARRAS", sku: "53661" },
+        { fiName: "RAKUUNAPORKANAT KERMA", sku: "56561" },
+        { fiName: "LOHIPASTA", sku: "20906" },
+        { fiName: "SAVULOHILASAGNE", sku: "53544" },
+        { fiName: "LOHIMUREKEPIHVI", sku: "21494" },
+        { fiName: "JÄÄMERENPIHVI", sku: "55191" },
+        { fiName: "LASAGNE", sku: "82303" },
+        { fiName: "PASTA CARBONARA", sku: "53712" },
+        { fiName: "UUNIFETAPASTA", sku: "63720" },
+        { fiName: "PINAATTI-VUOHENJ.LASAGNE", sku: "88282" },
+        { fiName: "NAKKISTROGANOFF", sku: "53700" },
+        { fiName: "MAALAISKINKUKIUSAUS", sku: "53714" },
+        { fiName: "LIHAKAALILAATIKKO", sku: "13618" },
+        { fiName: "LIHAMAKARONILAATIKKO", sku: "53710" },
+        { fiName: "KASVISGRATIINI", sku: "11799" },
+        { fiName: "KAHDEN KAALIN GRATIINI", sku: "18265" },
+        { fiName: "JANSSONINKIUSAUS", sku: "65868" },
+        { fiName: "KAALIKÄÄRYLE", sku: "00930" },
+        { fiName: "BURGUNDINPATA", sku: "35809" },
+        { fiName: "CHILI SIN CARNE", sku: "81861" },
+        { fiName: "ISOT LIHAPULLAT KERMAKASTIKKEES", sku: "56235" },
+        { fiName: "LIHAPULLAT MUUSILLA", sku: "53741" },
+        { fiName: "NAKKISTROGRANOFF MUUS", sku: "53741" },
+        { fiName: "LIHAPYÖRYKKÄ ITALIALAINEN", sku: "57191" },
+        { fiName: "KARJALANPAISTI", sku: "83895" },
+        { fiName: "KUKKOA VIINISSÄ", sku: "3612" },
+        { fiName: "BOLOGNESEKASTIKE", sku: "62764" },
+        { fiName: "KEBAB LUUMUTOMAATTIKASTIK", sku: "58218" },
+        { fiName: "PANANG TOFUCURRY", sku: "52813" },
+        { fiName: "PERUNAMUUSI", sku: "24238" },
+        { fiName: "ROSMARIINIPERUNAT", sku: "11086" },
+        { fiName: "HUNAJAISET KASVIKSET", sku: "88671" },
+        { fiName: "BASMATIRIISI", sku: "65880" },
+        { fiName: "GRILLILIHIPALA MUUSI", sku: "70171" },
+        { fiName: "SALAATTIANNOS", sku: "36521" },
+        { fiName: "PAAHDETUT JUUREKSET", sku: "57312" },
+        { fiName: "PAAHDETTU PIKKUPORKKUNA", sku: "54222" },
+        { fiName: "JUURES-PERUNAMUUSI", sku: "57631" },
+        { fiName: "INKIVÄRIPOSSU", sku: "52811" }
+    ];
+
+    let products = JSON.parse(localStorage.getItem('prisma_tuotteet')) || [...DEFAULT_PRODUCTS];
+
+    const searchInput = document.getElementById('searchInput');
+    const productList = document.getElementById('productList');
+    const resultsInfo = document.getElementById('resultsInfo');
+    const toast = document.getElementById('toast');
+    const adminPanel = document.getElementById('adminPanel');
+    const adminBanner = document.getElementById('adminBanner');
+    const adminList = document.getElementById('adminList');
+
+    function saveData() {
+        localStorage.setItem('prisma_tuotteet', JSON.stringify(products));
+        renderProducts(products);
+        renderAdminList();
+    }
+
+    function highlightMatch(text, query) {
+        if (!query) return text;
+        const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return text.replace(new RegExp(`(${escapedQuery})`, 'gi'), '<mark>$1</mark>');
+    }
+
+    function renderProducts(list, query = '') {
+        list.sort((a, b) => a.fiName.localeCompare(b.fiName, 'fi'));
+
+        if (list.length === 0) {
+            productList.innerHTML = `<li class="empty-state">❌ Tuotetta ei löytynyt.<br><br>Kokeile toista hakusanaa.</li>`;
+            resultsInfo.textContent = 'Löytyi 0 tulosta';
+            resultsInfo.className = 'results-info empty';
+            return;
+        }
+
+        resultsInfo.textContent = `Löytyi ${list.length} tulosta`;
+        resultsInfo.className = 'results-info';
+
+        let html = '';
+        list.forEach(product => {
+            html += `
+                <li class="card" role="button" tabindex="0" aria-label="Kopioi tuotekoodi ${product.sku}"
+                    onclick="copyToClipboard('${product.sku}')"
+                    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();copyToClipboard('${product.sku}');}">
+                    <div class="card-info">
+                        <div class="product-name">${highlightMatch(product.fiName, query)}</div>
+                        <span class="badge">Tuotekoodi</span>
+                    </div>
+                    <div class="code-area">
+                        <div class="product-code">${highlightMatch(product.sku, query)}</div>
+                        <div class="copy-icon">📋 Kopioi</div>
+                    </div>
+                </li>
+            `;
+        });
+        productList.innerHTML = html;
+    }
+
+    searchInput.addEventListener('input', (e) => {
+        const keyword = e.target.value.trim();
+        if (!keyword) { renderProducts(products); return; }
+        const lowerKeyword = keyword.toLowerCase();
+        const filtered = products.filter(p => 
+            p.fiName.toLowerCase().includes(lowerKeyword) || p.sku.includes(keyword)
+        );
+        renderProducts(filtered, keyword);
+    });
+
+    function copyToClipboard(code) {
+        if (!code) return;
+        navigator.clipboard.writeText(code).then(() => showToast(`Koodi ${code} kopioitu!`))
+        .catch(() => {
+            const ta = document.createElement("textarea"); ta.value = code;
+            document.body.appendChild(ta); ta.select();
+            document.execCommand("copy"); document.body.removeChild(ta);
+            showToast(`Koodi ${code} kopioitu!`);
+        });
+    }
+
+    function showToast(msg) {
+        toast.textContent = msg;
+        toast.className = "show";
+        setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 2000);
+    }
+
+    function toggleAdmin() {
+        const isHidden = adminPanel.style.display === 'none' || adminPanel.style.display === '';
+        if (isHidden) {
+            const password = prompt("Syötä hallintasala (oletus: admin):");
+            if (password === "admin" || password === "hallinta") { openAdminPanel(); }
+            else if (password !== null) { alert("Väärä salasana!"); }
+        } else { closeAdminPanel(); }
+    }
+
+    function openAdminPanel() {
+        adminPanel.style.display = 'block';
+        adminBanner.style.display = 'flex';
+        document.body.classList.add('admin-mode');
+        renderAdminList();
+        window.scrollTo(0, 0);
+        searchInput.value = '';
+        renderProducts(products);
+    }
+
+    function closeAdminPanel() {
+        adminPanel.style.display = 'none';
+        adminBanner.style.display = 'none';
+        document.body.classList.remove('admin-mode');
+        showToast("✅ Muutokset tallennettu ja hallintatila suljettu!");
+        renderProducts(products);
+    }
+
+    function renderAdminList() {
+        if (products.length === 0) {
+            adminList.innerHTML = '<div style="padding:15px; text-align:center; color:#888;">Ei tuotteita.</div>';
+            return;
+        }
+        products.sort((a, b) => a.fiName.localeCompare(b.fiName, 'fi'));
+        let html = '';
+        products.forEach((p, index) => {
+            html += `
+                <div class="admin-list-item">
+                    <div class="info"><strong>${p.fiName}</strong></div>
+                    <div style="display:flex; align-items:center;">
+                        <span class="code">${p.sku}</span>
+                        <button class="btn-delete" onclick="deleteProduct(${index})">Poista</button>
+                    </div>
+                </div>
+            `;
+        });
+        adminList.innerHTML = html;
+    }
+
+    function addProduct() {
+        const nameInput = document.getElementById('adminName');
+        const codeInput = document.getElementById('adminCode');
+        const name = nameInput.value.trim();
+        const code = codeInput.value.trim();
+
+        if (!name || !code) { alert("Täytä molemmat kentät!"); return; }
+        if (products.some(p => p.sku === code)) {
+            if (!confirm(`Koodi ${code} on jo olemassa. Korvataanko?`)) return;
+            products = products.filter(p => p.sku !== code);
+        }
+
+        products.push({ fiName: name.toUpperCase(), sku: code });
+        saveData();
+        nameInput.value = ''; codeInput.value = ''; nameInput.focus();
+        showToast("✅ Tuote lisätty ja tallennettu!");
+    }
+
+    function deleteProduct(index) {
+        if (confirm(`Haluatko poistaa tuotteen: ${products[index].fiName}?`)) {
+            products.splice(index, 1);
+            saveData();
+            showToast("🗑️ Tuote poistettu.");
+        }
+    }
+
+    function exportData() {
+        const dataStr = JSON.stringify(products, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `tuotekoodit_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("📥 Varmuuskopio ladattu! Jaa se muille.");
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (Array.isArray(imported) && imported.length > 0 && imported[0].fiName !== undefined) {
+                    products = imported;
+                    saveData();
+                    showToast("📤 Tiedot palautettu!");
+                } else { alert("Virheellinen tiedostomuoto."); }
+            } catch (err) { alert("Tiedoston lukeminen epäonnistui."); }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    function resetData() {
+        if (confirm("Palautetaanko oletusasetukset? Kaikki muutokset menetetään.")) {
+            products = [...DEFAULT_PRODUCTS];
+            saveData();
+            showToast("🔄 Oletusasetukset palautettu.");
+        }
+    }
+
+    renderProducts(products);
+</script>
+
+</body>
+</html>
