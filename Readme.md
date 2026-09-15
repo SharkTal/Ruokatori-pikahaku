@@ -25,7 +25,7 @@ Tämä on kevyt verkkosivu, joka toimii suoraan puhelimen selaimessa. **Sitä ei
 Työntekijä avaa vain linkin puhelimellaan:
 1. Kirjoittaa tuotteen nimen (esim. "Kana" tai "Lohi").
 2. Näkee heti oikean tuotekoodin isolla fontilla.
-3. Syöttää koodin vaa'alle.
+3. Syöttää koodin manuaalisesti vaa'alle.
 
 **Näin säästämme aikaa ja vähennämme virheitä.**
 
@@ -35,7 +35,7 @@ Työntekijä avaa vain linkin puhelimellaan:
 1. Avaa linkki puhelimellasi.
 2. Kirjoita hakukenttään tuotteen nimi tai koodi.
 3. Näet heti oikean tuotekoodin isolla fontilla.
-4. Syötä koodi vaa'alle.
+4. Napauta korttia → koodi näytetään suurella kokona vaa'alle syöttämistä varten.
 
 **Vinkki:** Lisää sivu puhelimesi aloitusnäytölle (Lisää kotinäytölle), niin se toimii kuin mikä tahansa sovellus!
 

@@ -30,7 +30,7 @@
             min-height: 100vh;
         }
         body.admin-mode { background-color: #eef5fc; }
-        
+
         .header-bar {
             display: flex;
             justify-content: space-between;
@@ -142,13 +142,64 @@
 
         .code-area { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
         .product-code { font-family: 'Courier New', Courier, monospace; font-size: 1.5rem; font-weight: 900; color: var(--code-color); letter-spacing: 1px; line-height: 1; }
-        .copy-icon { font-size: 0.75rem; color: #999; margin-top: 4px; transition: color 0.2s; }
-        .card:hover .copy-icon { color: var(--primary); }
 
         mark { background-color: var(--highlight-bg); color: var(--highlight-text); border-radius: 2px; padding: 0 2px; }
         .empty-state { text-align: center; color: #888; padding: 50px 20px; font-size: 1.05rem; background: white; border-radius: 10px; }
 
-        /* 管理面板样式 */
+        /* Code modal */
+        #codeModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 300;
+            justify-content: center;
+            align-items: center;
+        }
+        #codeModal.show { display: flex; }
+        .modal-card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px 25px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            max-width: 90%;
+            width: 340px;
+        }
+        .modal-card .modal-product-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 15px;
+        }
+        .modal-card .modal-big-code {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 4.5rem;
+            font-weight: 900;
+            color: var(--code-color);
+            letter-spacing: 4px;
+            line-height: 1.2;
+            margin: 10px 0 15px 0;
+        }
+        .modal-card .modal-hint {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 20px;
+        }
+        .modal-card .btn-close-modal {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+        .modal-card .btn-close-modal:hover { background: #003d7a; }
+
+        /* Admin panel */
         #adminPanel {
             display: none; background: #fff; border-radius: 12px; padding: 20px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; border: 2px solid #1976d2;
@@ -178,12 +229,24 @@
         .btn-primary { background: var(--success); color: white; border: none; padding: 12px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; flex: 1; }
         .btn-primary:hover { background: #1b5e20; }
 
+        /* Footer */
+        .footer-stats {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .footer-stats span { font-weight: bold; color: var(--primary); }
         .footer-disclaimer {
             text-align: center;
             font-size: 0.75rem;
             color: #888;
-            margin-top: 20px;
-            padding: 15px 10px;
+            margin-top: 10px;
+            padding: 10px;
             border-top: 1px solid #e0e0e0;
         }
 
@@ -197,6 +260,7 @@
             .btn-secondary, .btn-primary { width: 100%; }
             .header-bar h1 { font-size: 1rem; }
             .admin-toggle { padding: 6px 8px; font-size: 0.8rem; }
+            .modal-card .modal-big-code { font-size: 3.5rem; }
         }
     </style>
 </head>
@@ -249,7 +313,18 @@
 
 <div class="results-info" id="resultsInfo" aria-live="polite"></div>
 <ul class="product-list" id="productList"></ul>
-<div id="toast">Koodi kopioitu!</div>
+
+<div id="codeModal">
+    <div class="modal-card">
+        <div class="modal-product-name" id="modalProductName"></div>
+        <div class="modal-big-code" id="modalBigCode"></div>
+        <div class="modal-hint">Syötä koodi vaa'alle</div>
+        <button class="btn-close-modal" onclick="closeCodeModal()">Sulje</button>
+    </div>
+</div>
+
+<div class="footer-stats" id="footerStats"></div>
+<div id="toast"></div>
 
 <footer class="footer-disclaimer">
     Epävirallinen työkalu. Ei sidoksissa Prisman virallisiin järjestelmiin.
@@ -322,6 +397,9 @@
 
     let products = JSON.parse(localStorage.getItem('prisma_tuotteet')) || [...DEFAULT_PRODUCTS];
 
+    // Usage stats
+    let stats = JSON.parse(localStorage.getItem('prisma_stats')) || { searches: 0, views: 0, lastUsed: null };
+
     const searchInput = document.getElementById('searchInput');
     const productList = document.getElementById('productList');
     const resultsInfo = document.getElementById('resultsInfo');
@@ -329,11 +407,23 @@
     const adminPanel = document.getElementById('adminPanel');
     const adminBanner = document.getElementById('adminBanner');
     const adminList = document.getElementById('adminList');
+    const codeModal = document.getElementById('codeModal');
+    const footerStats = document.getElementById('footerStats');
 
     function saveData() {
         localStorage.setItem('prisma_tuotteet', JSON.stringify(products));
         renderProducts(products);
         renderAdminList();
+    }
+
+    function saveStats() {
+        localStorage.setItem('prisma_stats', JSON.stringify(stats));
+        renderStats();
+    }
+
+    function renderStats() {
+        const dateStr = stats.lastUsed ? new Date(stats.lastUsed).toLocaleDateString('fi-FI') : '—';
+        footerStats.innerHTML = `🔍 Hakuja: <span>${stats.searches}</span> · 👆 Koodien näyttökertoja: <span>${stats.views}</span> · Viimeksi käytetty: <span>${dateStr}</span>`;
     }
 
     function highlightMatch(text, query) {
@@ -358,16 +448,15 @@
         let html = '';
         list.forEach(product => {
             html += `
-                <li class="card" role="button" tabindex="0" aria-label="Kopioi tuotekoodi ${product.sku}"
-                    onclick="copyToClipboard('${product.sku}')"
-                    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();copyToClipboard('${product.sku}');}">
+                <li class="card" role="button" tabindex="0" aria-label="Näytä tuotekoodi ${product.sku}"
+                    onclick="showCode('${product.fiName}', '${product.sku}')"
+                    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showCode('${product.fiName}', '${product.sku}');}">
                     <div class="card-info">
                         <div class="product-name">${highlightMatch(product.fiName, query)}</div>
                         <span class="badge">Tuotekoodi</span>
                     </div>
                     <div class="code-area">
                         <div class="product-code">${highlightMatch(product.sku, query)}</div>
-                        <div class="copy-icon">📋 Kopioi</div>
                     </div>
                 </li>
             `;
@@ -378,6 +467,9 @@
     searchInput.addEventListener('input', (e) => {
         const keyword = e.target.value.trim();
         if (!keyword) { renderProducts(products); return; }
+        stats.searches++;
+        stats.lastUsed = Date.now();
+        saveStats();
         const lowerKeyword = keyword.toLowerCase();
         const filtered = products.filter(p => 
             p.fiName.toLowerCase().includes(lowerKeyword) || p.sku.includes(keyword)
@@ -385,16 +477,22 @@
         renderProducts(filtered, keyword);
     });
 
-    function copyToClipboard(code) {
-        if (!code) return;
-        navigator.clipboard.writeText(code).then(() => showToast(`Koodi ${code} kopioitu!`))
-        .catch(() => {
-            const ta = document.createElement("textarea"); ta.value = code;
-            document.body.appendChild(ta); ta.select();
-            document.execCommand("copy"); document.body.removeChild(ta);
-            showToast(`Koodi ${code} kopioitu!`);
-        });
+    function showCode(name, code) {
+        stats.views++;
+        stats.lastUsed = Date.now();
+        saveStats();
+        document.getElementById('modalProductName').textContent = name;
+        document.getElementById('modalBigCode').textContent = code;
+        codeModal.classList.add('show');
     }
+
+    function closeCodeModal() {
+        codeModal.classList.remove('show');
+    }
+
+    codeModal.addEventListener('click', (e) => {
+        if (e.target === codeModal) closeCodeModal();
+    });
 
     function showToast(msg) {
         toast.textContent = msg;
@@ -514,6 +612,7 @@
     }
 
     renderProducts(products);
+    renderStats();
 </script>
 
 </body>
