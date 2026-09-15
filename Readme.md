@@ -13,7 +13,7 @@ Kuvittele tilanne: On kiireinen lounasaika. Asiakas ostaa lämpimän aterian. Ty
 **Mitä ongelmia tässä oli aiemmin?**
 *   Hyllyjen reunoilla on paljon vanhoja, epäselviä paperilappuja, joista oikean koodin löytäminen on hidasta ja virhealtista.
 *   Uusien työntekijöiden on vaikea muistaa ulkoa kymmeniä eri koodeja.
-*   Koodin etsiminen ja käsin syöttäminen hidastaa kassaa ja aiheuttaa asiakkaille turhaa jonottamista.
+*   Koodin etsiminen aiheuttaa asiakkaille turhaa jonottamista.
 
 ## 💡 Ratkaisu: Tuotekoodien pikahaku
 
@@ -22,7 +22,7 @@ Tämä on kevyt verkkosivu, joka toimii suoraan puhelimen selaimessa. **Sitä ei
 Työntekijä avaa vain linkin puhelimellaan:
 1. Kirjoittaa tuotteen nimen (esim. "Kana" tai "Lohi").
 2. Painaa hakutulosta.
-3. Koodi kopioituu automaattisesti. Työntekijä liittää sen vaakaan.
+
 
 **Näin säästämme aikaa ja vähennämme virheitä.**
 
@@ -32,8 +32,7 @@ Työntekijä avaa vain linkin puhelimellaan:
 1. Avaa linkki puhelimellasi.
 2. Kirjoita hakukenttään tuotteen nimi tai koodi.
 3. Näet heti oikean tuotekoodin isolla fontilla.
-4. **Napauta korttia**, niin koodi kopioituu puhelimen leikepöydälle.
-5. Liitä koodi kassajärjestelmään tai vaa'alle.
+4. Syöttää vaa'alle.
 
 **Vinkki:** Lisää sivu puhelimesi aloitusnäytölle (Lisää kotinäytölle), niin se toimii kuin mikä tahansa sovellus!
 
@@ -59,8 +58,6 @@ Tämä työkalu on tällä hetkellä **prototyyppi (kokeiluversio)**. Se on teht
 
 Jos tämä osoittautuu hyödylliseksi, tätä ideaa voidaan kehittää eteenpäin yrityksen virallisilla resursseilla:
 *   **Automaattinen synkronointi:** Tiedot päivittyisivät kaikille työntekijöille reaaliajassa ilman manuaalista tiedostojen lähettämistä.
-*   **Integraatio kassajärjestelmiin:** Koodit siirtyisivät suoraan vaakaan, ilman erillistä kopiointia.
-*   **Viivakoodin skannaus:** Työntekijä voisi skannata tuotepakkauksen suoraan puhelimen kameralla.
 
 ---
 *Kehitetty oma-aloitteisesti työnteon sujuvoittamiseksi. (因工作流程优化需求而自主开发。)*# Ruokatori-tuotepikahaku
