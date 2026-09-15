@@ -4,6 +4,9 @@
 > Tämä on epävirallinen työkalu. Se ei ole sidoksissa Prisman virallisiin järjestelmiin. 
 > (Tämä työkalu on tehty oma-aloitteisesti työnteon helpottamiseksi, ei osana yrityksen virallisia järjestelmiä.)
 
+🔗 **Live-demo:** <https://sharktal.github.io/Ruokatori-pikahaku/>  
+📂 **Lähdekoodi:** <https://github.com/SharkTal/Ruokatori-pikahaku>
+
 ---
 
 ## 📌 Miksi tämä työkalu tehtiin? (Ongelma, johon törmäämme päivittäin)
@@ -21,8 +24,8 @@ Tämä on kevyt verkkosivu, joka toimii suoraan puhelimen selaimessa. **Sitä ei
 
 Työntekijä avaa vain linkin puhelimellaan:
 1. Kirjoittaa tuotteen nimen (esim. "Kana" tai "Lohi").
-2. Painaa hakutulosta.
-
+2. Näkee heti oikean tuotekoodin isolla fontilla.
+3. Syöttää koodin vaa'alle.
 
 **Näin säästämme aikaa ja vähennämme virheitä.**
 
@@ -32,7 +35,7 @@ Työntekijä avaa vain linkin puhelimellaan:
 1. Avaa linkki puhelimellasi.
 2. Kirjoita hakukenttään tuotteen nimi tai koodi.
 3. Näet heti oikean tuotekoodin isolla fontilla.
-4. Syöttää vaa'alle.
+4. Syötä koodi vaa'alle.
 
 **Vinkki:** Lisää sivu puhelimesi aloitusnäytölle (Lisää kotinäytölle), niin se toimii kuin mikä tahansa sovellus!
 
@@ -52,12 +55,20 @@ Koska tämä työkalu toimii itsenäisesti puhelimissa (ilman yrityksen palvelin
 *   Lähetä tämä tiedosto esimerkiksi työporukan WhatsApp-ryhmään tai sähköpostilla.
 *   Muut työntekijät avaavat oman sivunsa, menevät Hallintatilaan ja painavat **"📤 Palauta varmuuskopiosta"** ja valitsevat lähettämäsi tiedoston. Kaikki tiedot päivittyvät heti!
 
+## 🔧 Teknologia
+
+*   **Etupää:** HTML, CSS, JavaScript (ei riippuvuuksia, ei frameworkkeja)
+*   **Tietojen tallennus:** LocalStorage (toimii offline-tilassa)
+*   **Tietojen jakaminen:** JSON-vienti ja -tuonti
+*   **Isäntä:** GitHub Pages
+*   **Yhteensopivuus:** Toimii kaikissa moderneissa älypuhelimissa
+
 ## 🔮 Tulevaisuuden visio (Kehitysehdotus)
 
 Tämä työkalu on tällä hetkellä **prototyyppi (kokeiluversio)**. Se on tehty osoittamaan, että pienellä vaivalla voidaan ratkaista arjen ongelmia.
 
 Jos tämä osoittautuu hyödylliseksi, tätä ideaa voidaan kehittää eteenpäin yrityksen virallisilla resursseilla:
-*   **Automaattinen synkronointi:** Tiedot päivittyisivät kaikille työntekijöille reaaliajassa ilman manuaalista tiedostojen lähettämistä.
+*   **Automaattinen synkronointi:** Tiedot päivittyisivät kaikille työntekijöille reaaliajassa ilman manuaalista tiedostojen lähettämistä. Tämä vaatisi pienen tietokantataustan, jolloin kaikki muutokset näkyisivät automaattisesti kaikilla laitteilla.
 
 ---
-*Kehitetty oma-aloitteisesti työnteon sujuvoittamiseksi. (因工作流程优化需求而自主开发。)*# Ruokatori-tuotepikahaku
+*Kehitetty oma-aloitteisesti työnteon sujuvoittamiseksi. (因工作流程优化需求而自主开发。)*
